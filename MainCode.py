@@ -2,8 +2,8 @@ import streamlit as st
 import numpy as np
 import sys
 from streamlit import cli as stcli
-from scipy.integrate import quad #Single integral
-from scipy.integrate import dblquad, tplquad
+from scipy.stats import binom
+from scipy.integrate import quad, dblquad, tplquad
 from PIL import Image
 
 ###Defining the p.d.f.s and reliability functions############################
