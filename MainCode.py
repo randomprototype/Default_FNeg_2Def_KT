@@ -253,7 +253,7 @@ def main():
         
         global a1,b1,a2,b2,a3,b3,Ci,Cr,Cf,Cmd,beta,q,p
         a1=st.number_input("Insert the scale parameter for the minor defect arrival distribution (η_{X})", min_value = 0.0, value = 3.0, help="This parameter specifies the scale parameter for the Weibull distribution, representing the minor defect arrival.")
-        b2=st.number_input("Insert the shape parameter for the minor defect arrival distribution (κ_{X})", min_value = 1.0, max_value=5.0, value = 2.5, help="This parameter specifies the shape parameter for the Weibull distribution, representing the minor defect arrival.")
+        b1=st.number_input("Insert the shape parameter for the minor defect arrival distribution (κ_{X})", min_value = 1.0, max_value=5.0, value = 2.5, help="This parameter specifies the shape parameter for the Weibull distribution, representing the minor defect arrival.")
         a2=st.number_input("Insert the scale parameter for the major defect arrival distribution (η_{Y})", min_value = 0.0, value = 5.0, help="This parameter specifies the scale parameter for the Weibull distribution, representing the time from minor to major defect.")
         b2=st.number_input("Insert the shape parameter for the major defect arrival distribution (κ_{Y})", min_value = 1.0, max_value=5.0, value = 5.0, help="This parameter specifies the shape parameter for the Weibull distribution, representing the time from minor to major defect.")
         a3=st.number_input("Insert the scale parameter for the failure arrival distribution (η_{H})", min_value = 0.0, value = 5.0, help="This parameter specifies the scale parameter for the Weibull distribution, representing the time from major defect to failure.")
