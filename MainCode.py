@@ -6,130 +6,224 @@ from scipy.integrate import quad #Single integral
 from scipy.integrate import dblquad
 from PIL import Image
 
-def KD_KT(K,delta,T):
-    #########Definitions#######################################################
-    def f01(x):#weibull densidade (componente fraco)
-        return (b1/a1)*((x/a1)**(b1-1))*np.exp(-(x/a1)**b1)
-    def f02(x):#weibull densidade (componente forte)
-        return (b2/a2)*((x/a2)**(b2-1))*np.exp(-(x/a2)**b2)
-    def fx(x):
-        return (p*f01(x))+((1-p)*f02(x))
-    def fh(h):
-        return l*np.exp(-l*h)
-    def Fx(x):
-        return (p*(1-np.exp(-(x/a1)**b1)))+((1-p)*(1-np.exp(-(x/a2)**b2)))
-    def Rx(x):
-        return 1-Fx(x)
-    def Fh(h):
-        return 1-np.exp(-l*h)
-    def Rh(h):
-        return np.exp(-l*h)
-    #####Scenarios#############################################################
-    #####Failure between inspections###########################################
-    def C1(K,delta,T):
-        PROB1=0
-        EC1=0
-        EL1=0
-        for i in range(0, K):
-            PROB1=PROB1+(((1-alfa)**i)*(dblquad(lambda h, x: fx(x)*fh(h), delta[i], (delta[i+1]),0,lambda x:(delta[i+1])-x)[0]))
-            EL1=EL1+(((1-alfa)**i)*(dblquad(lambda h, x: (x+h)*fx(x)*fh(h), delta[i], (delta[i+1]),0,lambda x:(delta[i+1])-x)[0]))
-            EC1=EC1+(((i*ci)+cf)*(((1-alfa)**i)*(dblquad(lambda h, x: fx(x)*fh(h), delta[i], (delta[i+1]),0,lambda x:(delta[i+1])-x)[0]))) + (((1-alfa)**i)*(dblquad(lambda h, x: cd*h*fx(x)*fh(h), delta[i], (delta[i+1]),0,lambda x:(delta[i+1])-x)[0]))
-        return PROB1, EC1, EL1
-    ####Replacement at inspection##############################################
-    def C2(K,delta,T):
-        PROB2=0
-        EC2=0
-        EL2=0
-        for i in range(0, K):
-            PROB2=PROB2+(((1-alfa)**i)*(1-beta)*(quad(lambda x: fx(x)*(1-Fh((delta[i+1])-x)),delta[i], (delta[i+1]))[0]))
-            EC2=EC2+((((i+1)*ci)+cr)*(((1-alfa)**i)*(1-beta)*(quad(lambda x: fx(x)*(1-Fh((delta[i+1])-x)),delta[i], (delta[i+1]))[0]))) + (((1-alfa)**i)*(1-beta)*(quad(lambda x: cd*(delta[i+1]-x)*fx(x)*(1-Fh((delta[i+1])-x)),delta[i], (delta[i+1]))[0]))
-            EL2=EL2+((delta[i+1])*(((1-alfa)**i)*(1-beta)*(quad(lambda x: fx(x)*(1-Fh((delta[i+1])-x)),delta[i], (delta[i+1]))[0])))
-        return PROB2, EC2, EL2
-    ####Failure after all inspections and before T#############################
-    def C3(K,delta,T):
-        PROB3=((1-alfa)**(K))*(dblquad(lambda h, x: fx(x)*fh(h), delta[K], T,0,lambda x:T-x)[0])
-        EC3=(((K*ci)+cf)*PROB3) + (((1-alfa)**(K))*(dblquad(lambda h, x: cd*h*fx(x)*fh(h), delta[K], T,0,lambda x:T-x)[0]))
-        EL3=((1-alfa)**(K))*(dblquad(lambda h, x: (x+h)*fx(x)*fh(h), delta[K], T,0,lambda x:T-x)[0])
-        return PROB3, EC3, EL3
-    ####Replacement at T#######################################################
-    def C4(K,delta,T):
-        PROB4=((1-alfa)**(K))*quad(lambda x: fx(x)*(1-Fh(T-x)),delta[K],T)[0]
-        EC4=(((K*ci)+cr)*PROB4) + (((1-alfa)**(K))*quad(lambda x: cd*(T-x)*fx(x)*(1-Fh(T-x)),delta[K],T)[0])
-        EL4=T*PROB4
-        return PROB4, EC4, EL4
-    ####Replacement at T without defect########################################
-    def C5(K,delta,T):
-        PROB5=((1-alfa)**(K))*Rx(T)
-        EC5=((K*ci)+cr)*PROB5
-        EL5=T*PROB5
-        return PROB5, EC5, EL5
-    ####Failure after some false negatives#####################################
-    def C6(K,delta,T):
-        PROB6=0
-        EC6=0
-        EL6=0
-        for i in range(0, K-1):
-            for j in range(i+1, K):
-                PROB6=PROB6+(((1-alfa)**i)*(beta**(j-i))*(dblquad(lambda h, x: fx(x)*fh(h), delta[i], (delta[i+1]),lambda x:(delta[j])-x,lambda x:(delta[j+1])-x)[0]))
-                EL6=EL6+(((1-alfa)**i)*(beta**(j-i))*(dblquad(lambda h, x: (x+h)*fx(x)*fh(h), delta[i], (delta[i+1]),lambda x:(delta[j])-x,lambda x:(delta[j+1])-x)[0]))
-                EC6=EC6+(((j*ci)+cf)*(((1-alfa)**i)*(beta**(j-i))*(dblquad(lambda h, x: fx(x)*fh(h), delta[i], (delta[i+1]),lambda x:(delta[j])-x,lambda x:(delta[j+1])-x)[0]))) + (((1-alfa)**i)*(beta**(j-i))*(dblquad(lambda h, x: cd*h*fx(x)*fh(h), delta[i], (delta[i+1]),lambda x:(delta[j])-x,lambda x:(delta[j+1])-x)[0]))          
-        return PROB6, EC6, EL6
-    ####Replacement at inspection after some false negativies##################
-    def C7(K,delta,T):
-        PROB7=0
-        EC7=0
-        EL7=0
-        for i in range(0, K-1):
-            for j in range(i+2,K+1):
-                PROB7=PROB7+(((1-alfa)**i)*(beta**(j-i-1))*(1-beta)*(quad(lambda x: fx(x)*Rh((delta[j])-x),delta[i], (delta[i+1]))[0]))
-                EC7=EC7+(((j*ci)+cr)*(((1-alfa)**i)*(beta**(j-i-1))*(1-beta)*(quad(lambda x: fx(x)*Rh((delta[j])-x),delta[i], (delta[i+1]))[0]))) + (((1-alfa)**i)*(beta**(j-i-1))*(1-beta)*(quad(lambda x: cd*(delta[j]-x)*fx(x)*Rh((delta[j])-x),delta[i], (delta[i+1]))[0]))
-                EL7=EL7+((delta[j])*(((1-alfa)**i)*(beta**(j-i-1))*(1-beta)*(quad(lambda x: fx(x)*Rh((delta[j])-x),delta[i], (delta[i+1]))[0])))
-        return PROB7, EC7, EL7
-    ####Replacement by false positives#########################################
-    def C8(K,delta,T):
-        PROB8=0
-        EC8=0
-        EL8=0
-        for i in range(0,K):
-            PROB8=PROB8+(((1-alfa)**i)*alfa*Rx(delta[i+1]))
-            EC8=EC8+(((i+1)*ci)+cr)*(((1-alfa)**i)*alfa*Rx(delta[i+1]))
-            EL8=EL8+(delta[i+1]*(((1-alfa)**i)*alfa*Rx(delta[i+1])))
-        return PROB8, EC8, EL8
-    ####Failure after sucessive false negatives after inspections##############
-    def C9(K,delta,T):
-        PROB9=0
-        EC9=0
-        EL9=0
-        for i in range(0,K):
-            PROB9=PROB9+((((1-alfa)**i)*(beta**(K-i))*(dblquad(lambda h, x: fx(x)*fh(h), delta[i], delta[i+1],lambda x: delta[K]-x, lambda x:T-x)[0])))
-            EC9=EC9+((K*ci)+cf)*((((1-alfa)**i)*(beta**(K-i))*(dblquad(lambda h, x: fx(x)*fh(h), delta[i], delta[i+1],lambda x:delta[K]-x, lambda x:T-x)[0]))) + ((((1-alfa)**i)*(beta**(K-i))*(dblquad(lambda h, x: cd*h*fx(x)*fh(h), delta[i], delta[i+1],lambda x:delta[K]-x, lambda x:T-x)[0])))
-            EL9=EL9+((((1-alfa)**i)*(beta**(K-i))*(dblquad(lambda h, x: (x+h)*fx(x)*fh(h), delta[i], delta[i+1],lambda x:delta[K]-x, lambda x:T-x)[0])))
-        return PROB9, EC9, EL9
-    #####Replacement at T after sucessive false negatives######################
-    def C10(K,delta,T):
-        PROB10=0
-        EC10=0
-        EL10=0
-        for i in range(0,K):
-            PROB10=PROB10+(((1-alfa)**i)*(beta**(K-i))*(quad(lambda x: fx(x)*Rh(T-x),delta[i], (delta[i+1]))[0]))
-            EC10=EC10+((K*ci)+cr)*(((1-alfa)**i)*(beta**(K-i))*(quad(lambda x: fx(x)*Rh(T-x),delta[i], (delta[i+1]))[0])) + (((1-alfa)**i)*(beta**(K-i))*(quad(lambda x: cd*(T-x)*fx(x)*Rh(T-x),delta[i], (delta[i+1]))[0]))
-            EL10=EL10+T*(((1-alfa)**i)*(beta**(K-i))*(quad(lambda x: fx(x)*Rh(T-x),delta[i], (delta[i+1]))[0]))
-        return PROB10, EC10, EL10
+###Defining the p.d.f.s and reliability functions############################
+def fx(x):
+    return (b1 / a1**b1) * (x**(b1 - 1)) * np.exp(-(x / a1)**b1)
+def fy(y):
+    return (b2 / a2**b2) * (y**(b2 - 1)) * np.exp(-(y / a2)**b2)
+def fh(h):
+    return (b3 / a3**b3) * (h**(b3 - 1)) * np.exp(-(h / a3)**b3)
+def Rx(x):
+    return 1 - (1 - np.exp(-(x / a1)**b1))
+def Ry(y):
+    return 1 - (1 - np.exp(-(y / a2)**b2))
+##############################################################################
 
-    C1=C1(K,delta,T)
-    C2=C2(K,delta,T)
-    C3=C3(K,delta,T)
-    C4=C4(K,delta,T)
-    C5=C5(K,delta,T)
-    C6=C6(K,delta,T)
-    C7=C7(K,delta,T)
-    C8=C8(K,delta,T)
-    C9=C9(K,delta,T)
-    C10=C10(K,delta,T)
+###Defining the expected inspection cost######################################
+def CompExpCost(i):
+    Sum=0
+    for j in range(1,i,1):
+        Sum+=binom.pmf(j, i-1, (1-p))*j*Ci
+    return Sum
 
-    TOTAL_EC=C1[1]+C2[1]+C3[1]+C4[1]+C5[1]+C6[1]+C7[1]+C8[1]+C9[1]+C10[1]
-    TOTAL_EL=C1[2]+C2[2]+C3[2]+C4[2]+C5[2]+C6[2]+C7[2]+C8[2]+C9[2]+C10[2]
-    return TOTAL_EC/TOTAL_EL
+###Defining all the scenarios################################################
+def P1(K, T):
+    prob, length, cost = 0, 0, 0
+    for i in range(1, K+1):
+        Pi = ((1-q)**(i-1)) * tplquad(lambda h, y, x: fx(x) * fy(y) * fh(h), (i-1)*T, i*T, 0, lambda x: (i*T) - x, 0, lambda x, y: (i*T) - x - y)[0]
+        prob += Pi
+        length += ((1-q)**(i-1)) * tplquad(lambda h, y, x: (x + y + h) * fx(x) * fy(y) * fh(h), (i-1)*T, i*T, 0, lambda x: (i*T) - x, 0, lambda x, y: (i*T) - x - y)[0]
+        cost += Pi * (Cf + CompExpCost(i))+((1-q)**(i-1)) * tplquad(lambda h, y, x: (Cmd*h)*fx(x) * fy(y) * fh(h), (i-1)*T, i*T, 0, lambda x: (i*T) - x, 0, lambda x, y: (i*T) - x - y)[0]
+    return prob, length, cost
+def P2(K, T):
+    prob, length, cost = 0, 0, 0
+    for i in range(1, K):
+        pi = ((1-q)**(i-1)) * q * Rx(i*T) * dblquad(lambda h, y: fy(y) * fh(h), 0, T, 0, lambda y: T - y)[0]
+        prob += pi
+        length += ((1-q)**(i-1)) * q * Rx(i*T) * dblquad(lambda h, y: (i*T + y + h) * fy(y) * fh(h), 0, T, 0, lambda y: T - y)[0]
+        cost += pi * (Cf + Ci + CompExpCost(i))+((1-q)**(i-1)) * q * Rx(i*T) * dblquad(lambda h, y: (Cmd*h)*fy(y) * fh(h), 0, T, 0, lambda y: T - y)[0]
+    return prob, length, cost
+def P3(K, T):
+    prob, length, cost = 0, 0, 0
+    for i in range(1, K):
+        for j in range(i+1, K+1):
+            pi = ((1-q)**(i-1)) * ((p + (1-p) * beta)**(j-i)) * tplquad(lambda h, y, x: fx(x) * fy(y) * fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T) - x, lambda x: (j*T) - x, 0, lambda x, y: (j*T) - x - y)[0]
+            prob += pi
+            length += ((1-q)**(i-1)) * ((p + (1-p) * beta)**(j-i)) * tplquad(lambda h, y, x: (x + y + h) * fx(x) * fy(y) * fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T) - x, lambda x: (j*T) - x, 0, lambda x, y: (j*T) - x - y)[0]
+            cost += pi * (Cf + CompExpCost(j)) + ((1-q)**(i-1)) * ((p + (1-p) * beta)**(j-i)) * tplquad(lambda h, y, x: (Cmd*h)*fx(x) * fy(y) * fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T) - x, lambda x: (j*T) - x, 0, lambda x, y: (j*T) - x - y)[0]
+    return prob, length, cost
+def P4(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K-1):
+        for j in range (i+2,K+1):
+            pi = ((q*(1-q)**(i-1))*((p+(1-p)*beta)**(j-i-1))*Rx(i*T)*dblquad(lambda h, y: fy(y)*fh(h), ((j-1)-i)*T, (j-i)*T, 0, lambda y: j*T-i*T-y)[0]) 
+            prob += pi
+            length += ((q*(1-q)**(i-1))*((p+(1-p)*beta)**(j-i-1))*Rx(i*T)*dblquad(lambda h, y: (i*T+y+h)*fy(y)*fh(h), ((j-1)-i)*T, (j-i)*T, 0, lambda y: j*T-i*T-y)[0]) 
+            cost += pi *(Cf + Ci + CompExpCost(j-1)) + ((q*(1-q)**(i-1))*((p+(1-p)*beta)**(j-i-1))*Rx(i*T)*dblquad(lambda h, y: (Cmd*h)*fy(y)*fh(h), ((j-1)-i)*T, (j-i)*T, 0, lambda y: j*T-i*T-y)[0]) 
+    return prob, length, cost
+def P5(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K):
+        for j in range (i,K):
+            pi = ((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(1-beta)*(1-p)*(dblquad(lambda y, x: fx(x)*fy(y), (i-1)*T, i*T, lambda x: (j*T)-x, np.inf))[0]
+            prob += pi
+            length += ((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(1-beta)*(1-p)*(dblquad(lambda y, x: j*T*fx(x)*fy(y), (i-1)*T, i*T, lambda x: (j*T)-x, np.inf))[0]
+            cost += pi*(Cr + Ci + CompExpCost(j))
+    return prob, length, cost
+def P6(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K-1):
+        for j in range (i+1,K):
+            pi = (q*((1-q)**(i-1))*(((p+(1-p)*beta)**(j-i-1))*(1-beta)*(1-p)*Rx(i*T))*quad(lambda y: fy(y), (j-i)*T, np.inf)[0]) 
+            prob += pi
+            length += (q*((1-q)**(i-1))*(((p+(1-p)*beta)**(j-i-1))*(1-beta)*(1-p)*Rx(i*T))*quad(lambda y: j*T*fy(y), (j-i)*T, np.inf)[0]) 
+            cost += pi * (Cr + 2*Ci + CompExpCost(j-1))
+    return prob, length, cost
+def P7(K,T):
+    prob,  length, cost = 0, 0, 0
+    for i in range (1,K):
+        for j in range (i,K):
+            pi = (((1-q)**(i-1))*((p)**(j-i))*(1-p)*(tplquad(lambda h, y, x: fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: i*T-x, lambda x, y: (((j)*T)-x-y), np.inf))[0])
+            prob += pi
+            length += (((1-q)**(i-1))*((p)**(j-i))*(1-p)*(tplquad(lambda h, y, x: j*T*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: i*T-x, lambda x, y: (((j)*T)-x-y), np.inf))[0])
+            cost += pi * (Cr + Ci + CompExpCost(j)) + (((1-q)**(i-1))*((p)**(j-i))*(1-p)*(tplquad(lambda h, y, x: (Cmd*(i*T-(x+y)))*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: i*T-x, lambda x, y: (((j)*T)-x-y), np.inf))[0])
+    return prob, length, cost
+def P8(K,T):
+   prob, length, cost = 0, 0, 0
+   for i in range (1,K-1):
+       for j in range (i+1,K):
+           pi = ((((1-q)**(i-1))*q*(p**(j-i-1))*(1-p)*Rx(i*T))*dblquad(lambda h, y: fy(y)*fh(h), 0, T, lambda y: j*T-y-i*T, np.inf)[0]) 
+           prob += pi
+           length += ((((1-q)**(i-1))*q*(p**(j-i-1))*(1-p)*Rx(i*T))*dblquad(lambda h, y: j*T*fy(y)*fh(h), 0, T, lambda y: j*T-y-i*T, np.inf)[0]) 
+           cost += pi * ((Cr + 2*Ci + CompExpCost(j-1))) + ((((1-q)**(i-1))*q*(p**(j-i-1))*(1-p)*Rx(i*T))*dblquad(lambda h, y: (Cmd*(j*T-(i*T+y)))*fy(y)*fh(h), 0, T, lambda y: j*T-y-i*T, np.inf)[0]) 
+   return prob , length , cost
+def P9(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K-1):
+        for j in range (i+1,K):
+            for l in range (j,K):
+                pi = ((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(l-j))*(1-p)*(tplquad(lambda h, y, x: fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T)-x, lambda x: (j*T)-x, lambda x, y: ((l*T)-x-y), np.inf))[0]
+                prob += pi
+                length += ((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(l-j))*(1-p)*(tplquad(lambda h, y, x: l*T*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T)-x, lambda x: (j*T)-x, lambda x, y: ((l*T)-x-y), np.inf))[0]
+                cost += pi * (Cr + Ci + CompExpCost(l)) + ((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(l-j))*(1-p)*(tplquad(lambda h, y, x: (Cmd*(l*T-(x+y)))*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T)-x, lambda x: (j*T)-x, lambda x, y: ((l*T)-x-y), np.inf))[0]
+    return prob, length, cost
+def P10(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K-2):
+        for j in range (i+2,K):
+            for l in range (j,K):
+                pi = ((q*(1-q)**(i-1))*(((p+(1-p)*beta)**(j-i-1))*(p**(l-j))*(1-p)*Rx((i)*T))*dblquad(lambda h, y: fy(y)*fh(h), (j-1)*T-i*T, j*T - (i)*T, lambda y: (l*T)-y-(i)*T, np.inf) [0]) 
+                prob += pi
+                length += ((q*(1-q)**(i-1))*(((p+(1-p)*beta)**(j-i-1))*(p**(l-j))*(1-p)*Rx((i)*T))*dblquad(lambda h, y: l*T*fy(y)*fh(h), (j-1)*T-i*T, j*T - (i)*T, lambda y: (l*T)-y-(i)*T, np.inf) [0]) 
+                cost += pi * ((Cr + 2*Ci + CompExpCost(l-1))) + ((q*(1-q)**(i-1))*(((p+(1-p)*beta)**(j-i-1))*(p**(l-j))*(1-p)*Rx((i)*T))*dblquad(lambda h, y: (Cmd*(l*T-(i*T+y)))*fy(y)*fh(h), (j-1)*T-i*T, j*T - (i)*T, lambda y: (l*T)-y-(i)*T, np.inf) [0]) 
+    return prob, length, cost
+def P11(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K+1):
+        pi = ((1-q)**(i-1))*((p+(1-p)*beta)**(K-i))*(dblquad(lambda y, x: fx(x)*fy(y), (i-1)*T, i*T, lambda x: (K*T)-x, np.inf))[0]
+        prob += pi
+        length += ((1-q)**(i-1))*((p+(1-p)*beta)**(K-i))*(dblquad(lambda y, x: K*T*fx(x)*fy(y), (i-1)*T, i*T, lambda x: (K*T)-x, np.inf))[0]
+        cost += pi * (Cr + CompExpCost(K))
+    return prob, length, cost
+def P12(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K):
+        pi = (q*(1-q)**(i-1))*((p+(1-p)*beta)**(K-i-1))*Rx((i)*T)*(quad(lambda y: fy(y), (K*T)-(i)*T, np.inf))[0]
+        prob += pi
+        length += (q*(1-q)**(i-1))*((p+(1-p)*beta)**(K-i-1))*Rx((i)*T)*(quad(lambda y: K*T*fy(y), (K*T)-(i)*T, np.inf))[0]
+        cost += pi * (Cr + Ci + CompExpCost(K-1))
+    return prob, length, cost
+def P13(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K+1):
+        pi = ((1-q)**(i-1))*(p**(K-i))*(tplquad(lambda h, y, x: fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: (i*T)-x, lambda x, y: ((K*T)-x-y), np.inf))[0]
+        prob += pi
+        length += ((1-q)**(i-1))*(p**(K-i))*(tplquad(lambda h, y, x: K*T*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: (i*T)-x, lambda x, y: ((K*T)-x-y), np.inf))[0]
+        cost += pi * (Cr + CompExpCost(i)) + ((1-q)**(i-1))*(p**(K-i))*(tplquad(lambda h, y, x: (Cmd*(K*T-(x+y)))*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: (i*T)-x, lambda x, y: ((K*T)-x-y), np.inf))[0]
+    return prob, length, cost
+def P14(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K):
+        pi = ((1-q)**(i-1))*q*(p**(K-i-1))*Rx(i*T)*(dblquad(lambda h, y: fy(y)*fh(h), 0, T, lambda y: (K*T)-y-i*T, np.inf))[0]
+        prob += pi
+        length += ((1-q)**(i-1))*q*(p**(K-i-1))*Rx(i*T)*(dblquad(lambda h, y: K*T*fy(y)*fh(h), 0, T, lambda y: (K*T)-y-i*T, np.inf))[0]
+        cost += pi * (Cr + Ci + CompExpCost(i)) + ((1-q)**(i-1))*q*(p**(K-i-1))*Rx(i*T)*(dblquad(lambda h, y: (Cmd*(K*T-(i*T+y)))*fy(y)*fh(h), 0, T, lambda y: (K*T)-y-i*T, np.inf))[0]
+    return prob, length, cost
+def P15(K,T):
+   prob, length, cost = 0, 0, 0
+   for i in range (1,K):
+       for j in range (i+1,K+1):
+           pi = (((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(K-j))*(tplquad(lambda h, y, x: fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: (j-1)*T - x, lambda x: (j*T)-x, lambda x, y: ((K*T)-x-y), np.inf))[0]) 
+           prob += pi
+           length += (((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(K-j))*(tplquad(lambda h, y, x: K*T*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: (j-1)*T - x, lambda x: (j*T)-x, lambda x, y: ((K*T)-x-y), np.inf))[0]) 
+           cost += pi * (Cr + CompExpCost(j)) + (((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(K-j))*(tplquad(lambda h, y, x: (Cmd*(K*T-(x+y)))*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: (j-1)*T - x, lambda x: (j*T)-x, lambda x, y: ((K*T)-x-y), np.inf))[0]) 
+   return prob, length, cost
+def P16(K,T):
+   prob, length, cost = 0, 0, 0
+   for i in range (1,K-1):
+       for j in range (i+2,K+1):
+           pi = ((1-q)**(i-1))*q*((p+(1-p)*beta)**(j-i-1))*(p**(K-j))*Rx(i*T)*(dblquad(lambda h, y: fy(y)*fh(h), (j-1)*T-i*T, j*T-i*T, lambda y: (K*T)-y-i*T, np.inf))[0]
+           prob += pi
+           length += ((1-q)**(i-1))*q*((p+(1-p)*beta)**(j-i-1))*(p**(K-j))*Rx(i*T)*(dblquad(lambda h, y: K*T*fy(y)*fh(h), (j-1)*T-i*T, j*T-i*T, lambda y: (K*T)-y-i*T, np.inf))[0]
+           cost += pi * (Cr + Ci + CompExpCost(j-1)) + ((1-q)**(i-1))*q*((p+(1-p)*beta)**(j-i-1))*(p**(K-j))*Rx(i*T)*(dblquad(lambda h, y: (Cmd*(K*T-(i*T+y)))*fy(y)*fh(h), (j-1)*T-i*T, j*T-i*T, lambda y: (K*T)-y-i*T, np.inf))[0]
+   return prob, length, cost 
+def P17(K,T):
+   prob, length, cost = 0, 0, 0
+   for i in range (1,K):
+       for j in range (i+1,K+1):
+           pi = ((1-q)**(i-1))*(p**(j-i))*(tplquad(lambda h, y, x: fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: (i*T)-x, lambda x, y: (((j-1)*T)-x-y), lambda x, y: ((j*T)-x-y)))[0] 
+           prob += pi
+           length += ((1-q)**(i-1))*(p**(j-i))*(tplquad(lambda h, y, x: (x+y+h)*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: (i*T)-x, lambda x, y: (((j-1)*T)-x-y), lambda x, y: ((j*T)-x-y)))[0] 
+           cost += pi * (Cf + CompExpCost(i)) + ((1-q)**(i-1))*(p**(j-i))*(tplquad(lambda h, y, x: (Cmd*h)*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, 0, lambda x: (i*T)-x, lambda x, y: (((j-1)*T)-x-y), lambda x, y: ((j*T)-x-y)))[0] 
+   return prob, length, cost 
+def P18(K,T):
+   prob, length, cost = 0, 0, 0
+   for i in range (1,K-1):
+       for j in range (i+2,K+1):
+           pi = ((1-q)**(i-1))*q*(p**(j-i-1))*Rx(i*T)*(dblquad(lambda h, y: fy(y)*fh(h), 0, T, lambda y: ((j-1)*T)-y-i*T,lambda y: (j*T)-y-i*T))[0]
+           prob += pi
+           length += ((1-q)**(i-1))*q*(p**(j-i-1))*Rx(i*T)*(dblquad(lambda h, y: (i*T+y+h)*fy(y)*fh(h), 0, T, lambda y: ((j-1)*T)-y-i*T,lambda y: (j*T)-y-i*T))[0]
+           cost += pi * (Cf + Ci + CompExpCost(i)) + ((1-q)**(i-1))*q*(p**(j-i-1))*Rx(i*T)*(dblquad(lambda h, y: (Cmd*h)*fy(y)*fh(h), 0, T, lambda y: ((j-1)*T)-y-i*T,lambda y: (j*T)-y-i*T))[0]
+   return prob, length, cost 
+def P19(K,T):
+   prob, length, cost = 0, 0, 0
+   for i in range (1,K-1):
+       for j in range (i+1,K):
+           for l in range (j+1,K+1):
+               pi = ((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(l-j))*(tplquad(lambda h, y, x: fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T)-x, lambda x: (j*T)-x, lambda x, y: (((l-1)*T)-x-y), lambda x, y:((l*T)-x-y)))[0]
+               prob += pi
+               length += ((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(l-j))*(tplquad(lambda h, y, x: (x+y+h)*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T)-x, lambda x: (j*T)-x, lambda x, y: (((l-1)*T)-x-y), lambda x, y:((l*T)-x-y)))[0]
+               cost += pi * (Cf + CompExpCost(j)) + ((1-q)**(i-1))*((p+(1-p)*beta)**(j-i))*(p**(l-j))*(tplquad(lambda h, y, x: (Cmd*h)*fx(x)*fy(y)*fh(h), (i-1)*T, i*T, lambda x: ((j-1)*T)-x, lambda x: (j*T)-x, lambda x, y: (((l-1)*T)-x-y), lambda x, y:((l*T)-x-y)))[0]
+   return prob, length, cost 
+def P20(K,T):
+    prob, length, cost = 0, 0, 0
+    for i in range (1,K-2):
+        for j in range (i+2,K):
+            for l in range (j+1,K+1):
+                pi = (q*((1-q)**(i-1))*(((p+(1-p)*beta)**(j-i-1))*(p**(l-j))*Rx(i*T))*dblquad(lambda h, y: fy(y)*fh(h), (j-1)*T - i*T, j*T - i*T, lambda y: ((l-1)*T)-y-(i*T), lambda y:(l*T)-y-(i*T)) [0])
+                prob += pi
+                length += (q*((1-q)**(i-1))*(((p+(1-p)*beta)**(j-i-1))*(p**(l-j))*Rx(i*T))*dblquad(lambda h, y: (i*T+y+h)*fy(y)*fh(h), (j-1)*T - i*T, j*T - i*T, lambda y: ((l-1)*T)-y-(i*T), lambda y:(l*T)-y-(i*T)) [0])
+                cost += pi * (Cf + Ci + CompExpCost(j-1)) +  (q*((1-q)**(i-1))*(((p+(1-p)*beta)**(j-i-1))*(p**(l-j))*Rx(i*T))*dblquad(lambda h, y: (Cmd*h)*fy(y)*fh(h), (j-1)*T - i*T, j*T - i*T, lambda y: ((l-1)*T)-y-(i*T), lambda y:(l*T)-y-(i*T)) [0])
+    return prob, length, cost 
+def P21(K, T):
+    prob = ((1-q)**(K-1)) * Rx(K*T)
+    length = ((1-q)**(K-1)) * Rx(K*T) * K*T
+    cost = prob * (Cr + CompExpCost(K))
+    return prob, length, cost
+
+def Sum(K, T):
+    prob, length, cost = 0, 0, 0
+    cenarios = [P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, P20, P21]
+    for cenario in cenarios:
+        p, l, c = cenario(K, T)
+        prob += p
+        length += l
+        cost += c
+    return prob, length, cost
+
+def taxa_de_custo(K, T):
+    prob, length, cost = Sum(K, T)
+    return cost/length
 
 def main():
     #criando 3 colunas
@@ -139,12 +233,12 @@ def main():
     #inserindo na coluna 2
     col2.image(foto, use_column_width=True)
     #O código abaixo centraliza e atribui cor
-    st.markdown("<h2 style='text-align: center; color: #306754;'>HyPAIRS - Hybrid Policy of Aperiodic Inspections and Replacement System</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #306754;'>HIDF-2D: Hybrid Inspection/Age-based with Defaults, False-negative and 2 levels of Defect</h2>", unsafe_allow_html=True)
     
     st.markdown("""
         <div style="background-color: #F3F3F3; padding: 10px; text-align: center;">
-          <p style="font-size: 20px; font-weight: bold;">An aperiodic inspection and replacement policy based on the delay-time model with component-lifetime heterogeneity</p>
-          <p style="font-size: 15px;">By: Victor H. R. Lima, Rafael, G. N. Paiva, Augusto J. S. Rodrigues, Hanser S. J. González & Cristiano A. V. Cavalcante</p>
+          <p style="font-size: 20px; font-weight: bold;">Data-driven maintenance scheduling for a system with a three-stage failure process subject to maintenance errors and defaults</p>
+          <p style="font-size: 15px;">By: Rafael G. N. Paiva, Victor H. R. Lima, Augusto J. S. Rodrigues, Cristiano A. V. Cavalcante & P. Do</p>
         </div>
         """, unsafe_allow_html=True)
 
