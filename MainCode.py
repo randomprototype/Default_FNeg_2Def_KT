@@ -222,7 +222,8 @@ def Sum(K, T):
     return prob, length, cost
 
 def taxa_de_custo(K, T):
-    prob, length, cost = Sum(K, T)
+    #prob, length, cost = Sum(K, T)
+    prob, length, cost = 1,2,2
     return cost/length
 
 def main():
