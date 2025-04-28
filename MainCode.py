@@ -268,11 +268,11 @@ def main():
         col1, col2 = st.columns(2)
         
         st.subheader("Insert the variable values below:")
-        K=int(st.text_input("Insert the number of inspections (K)", value=4))
+        K=int(st.text_input("Insert the number of inspections (K-1)", value=4))
         if (K<0):
             K=0
         Value=2
-        T = st.number_input("Insert the constant interval between sucessive inspections (T)", value=1.0,min_value=0.00001)
+        T = st.number_input("Insert the constant interval between maintenance actions (T)", value=1.0,min_value=0.00001)
         
         st.subheader("Click on botton below to run this application:")    
         botao = st.button("Get cost-rate")
@@ -283,7 +283,7 @@ def main():
     if choice == menu[1]:
         st.header(menu[1])
         st.write("<h6 style='text-align: justify; color: Blue Jay;'>This app is dedicated to compute the cost-rate for a hybrid periodic inspection and age-based maintenance policy. We assume a single system operating under a three-stage failure process. Component renovation occurs either after a failure (corrective maintenance) or during inspections, once a defect is detected or if the age-based threshold is reached (preventive maintenance). We considered false-negative probabilities during inspections for minor defect detections, probability of inducing minor defects due to bad inspections and defaults in inspections.</h6>", unsafe_allow_html=True)
-        st.write("<h6 style='text-align: justify; color: Blue Jay;'>The app computes the cost-rate for a specific solution—defined by the number of inspections (K) and constant interval between sucessive inspections. At the moment (K+1)*T, then the age-based action is conduced.</h6>", unsafe_allow_html=True)
+        st.write("<h6 style='text-align: justify; color: Blue Jay;'>The app computes the cost-rate for a specific solution—defined by the number of inspections (K-1) and constant interval between sucessive maintenance actions. At the moment K*T, then the age-based action is conduced.</h6>", unsafe_allow_html=True)
         st.write("<h6 style='text-align: justify; color: Blue Jay;'>For further questions or information on finding the optimal solution, please contact one of the email addresses below.</h6>", unsafe_allow_html=True)
         
         st.write('''
