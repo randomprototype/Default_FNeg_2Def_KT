@@ -233,7 +233,7 @@ def main():
     #inserindo na coluna 2
     col2.image(foto, use_column_width=True)
     #O código abaixo centraliza e atribui cor
-    st.markdown("<h2 style='text-align: center; color: #306754;'>HIDFI-2D: Hybrid Inspection/Age-based with Defaults, False-negative, Defect Induction and 2 levels of Defect Policy</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #306754;'>MAPED-Tool: Tool for Maintenance Policy under Errors and Defaulting</h2>", unsafe_allow_html=True)
     
     st.markdown("""
         <div style="background-color: #F3F3F3; padding: 10px; text-align: center;">
