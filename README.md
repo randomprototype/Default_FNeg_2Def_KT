@@ -2,6 +2,6 @@ This repository is relative to the web-application for the cost-rate computation
 
 Welcome to the source code repository for the Streamlit application. This application was developed by Rafael G.N. Paiva, Victor H. R. Lima, Augusto J. S. Rodrigues and Cristiano A. V. Cavalcante.
 
-To access the aplication, visit: 
+To access the aplication, visit: https://defaultfneg2defkt-kkabdds2xjadsmleodfwi3.streamlit.app/
 
 Please note that the app may occasionally enter standby mode due to inactivity. If this happens, simply click "Yes, get this app back up!" to restart it.
