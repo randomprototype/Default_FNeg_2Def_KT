@@ -228,19 +228,20 @@ def taxa_de_custo(K, T):
 def main():
     #criando 3 colunas
     col1, col2, col3= st.columns(3)
-    foto = Image.open('randomen.png')
+    #foto = Image.open('randomen.png')
     #st.sidebar.image("randomen.png", use_column_width=True)
     #inserindo na coluna 2
-    col2.image(foto, use_column_width=True)
+    #col2.image(foto, use_column_width=True)
     #O código abaixo centraliza e atribui cor
     st.markdown("<h2 style='text-align: center; color: #306754;'>MAPED-Tool: Tool for Maintenance Policy under Errors and Defaulting</h2>", unsafe_allow_html=True)
     
     st.markdown("""
         <div style="background-color: #F3F3F3; padding: 10px; text-align: center;">
           <p style="font-size: 20px; font-weight: bold;">Data-driven maintenance scheduling for a system with a three-stage failure process subject to maintenance errors and defaults</p>
-          <p style="font-size: 15px;">By: Rafael G. N. Paiva, Victor H. R. Lima, Augusto J. S. Rodrigues, Cristiano A. V. Cavalcante & P. Do</p>
+          <p style="font-size: 15px;"></p>
         </div>
         """, unsafe_allow_html=True)
+    #Rafael G. N. Paiva, Victor H. R. Lima, Augusto J. S. Rodrigues, Cristiano A. V. Cavalcante & P. Do
 
     menu = ["Cost-rate", "Information", "Website"]
     
@@ -286,24 +287,25 @@ def main():
         st.write("<h6 style='text-align: justify; color: Blue Jay;'>The app computes the cost-rate for a specific solution—defined by the number of inspections (K-1) and constant interval between sucessive maintenance actions. At the moment K*T, then the age-based action is conduced.</h6>", unsafe_allow_html=True)
         st.write("<h6 style='text-align: justify; color: Blue Jay;'>For further questions or information on finding the optimal solution, please contact one of the email addresses below.</h6>", unsafe_allow_html=True)
         
-        st.write('''
+        #st.write('''
 
-r.g.n.paiva@random.org.br
+#r.g.n.paiva@random.org.br
 
-v.h.r.lima@random.org.br
+#v.h.r.lima@random.org.br
 
-a.j.s.rodrigues@random.org.br
+#a.j.s.rodrigues@random.org.br
 
-c.a.v.cavalcante@random.org.br
+#c.a.v.cavalcante@random.org.br
 
-''' .format(chr(948), chr(948), chr(948), chr(948), chr(948)))       
+#''' .format(chr(948), chr(948), chr(948), chr(948), chr(948)))       
+    
     if choice==menu[2]:
         st.header(menu[2])
         
-        st.write('''The Research Group on Risk and Decision Analysis in Operations and Maintenance was created in 2012 
-                 in order to bring together different researchers who work in the following areas: risk, maintenance a
-                 nd operation modelling. Learn more about it through our website.''')
-        st.markdown('[Click here to be redirected to our website](https://sites.ufpe.br/random/#page-top)',False)        
+        #st.write('''The Research Group on Risk and Decision Analysis in Operations and Maintenance was created in 2012 
+         #        in order to bring together different researchers who work in the following areas: risk, maintenance a
+          #       nd operation modelling. Learn more about it through our website.''')
+        #st.markdown('[Click here to be redirected to our website](https://sites.ufpe.br/random/#page-top)',False)        
 if st._is_running_with_streamlit:
     main()
 else:
