@@ -305,5 +305,4 @@ def main():
          #        in order to bring together different researchers who work in the following areas: risk, maintenance a
           #       nd operation modelling. Learn more about it through our website.''')
         #st.markdown('[Click here to be redirected to our website](https://sites.ufpe.br/random/#page-top)',False)        
-if st._is_running_with_streamlit:
-    main()
+main()
