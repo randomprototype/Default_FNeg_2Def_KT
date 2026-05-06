@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import sys
-from streamlit import cli as stcli
 from scipy.stats import binom
 from scipy.integrate import quad, dblquad, tplquad
 from PIL import Image
@@ -308,6 +307,3 @@ def main():
         #st.markdown('[Click here to be redirected to our website](https://sites.ufpe.br/random/#page-top)',False)        
 if st._is_running_with_streamlit:
     main()
-else:
-    sys.argv = ["streamlit", "run", sys.argv[0]]
-    sys.exit(stcli.main())
